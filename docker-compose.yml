@@ -1,0 +1,45 @@
+---
+version: '2.4'
+services:
+
+  stripe_test:
+    container_name: stripe_test
+    hostname: stripe_test
+    command: sh -c "python manage.py showmigrations &&
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file:
+      - .env.local
+    volumes:
+      - .:/app/
+    depends_on:
+      - stripe_test-postgres
+    ports:
+      - 8000:8000
+
+  stripe_test-postgres:
+    container_name: stripe_test-postgres
+    hostname: stripe_test-postgres
+    image: postgres:14
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/app/pgdata/
+    volumes:
+      - pgdata:/var/lib/postgresql/data/app/
+    healthcheck:
+      test: pg_isready -U postgres -d postgres
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - 5432:5432
+
+volumes:
+  pgdata: {}
